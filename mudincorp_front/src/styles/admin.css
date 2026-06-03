@@ -1,0 +1,14 @@
+.admin-layout {
+  min-height: 100vh;
+  background: #f4f7fb;
+}
+
+.admin-card {
+  border-radius: 1.75rem;
+  background: white;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+}
+
+.admin-page {
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+}
