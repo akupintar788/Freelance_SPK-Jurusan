@@ -23,6 +23,7 @@ use App\Http\Controllers\API\Siswa\SurveiController;
 use App\Http\Controllers\API\Siswa\HasilPerhitunganController;
 use App\Http\Controllers\API\Siswa\HasilRekomendasiController;
 use App\Http\Controllers\API\Admin\NilaiRaporController;
+use App\Http\Controllers\API\Siswa\SiswaDashboardController;
 // ======================================================
 // AUTH
 // ======================================================
@@ -41,7 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ==================================================
     // DASHBOARD
     // ==================================================
-    Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get('/dashboard', [SiswaDashboardController::class, 'index']);
     // =================================================
     // SAW GLOBAL
     // ==================================================
