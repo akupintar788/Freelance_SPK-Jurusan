@@ -17,7 +17,16 @@ class SawController extends Controller
         if (!$siswa) {
             return response()->json(['message' => 'Siswa tidak ditemukan.'], 404);
         }
+        $totalBobot = DB::table('kriteria')
+        ->where('is_active', true)
+        ->sum('bobot');
 
+        if (abs($totalBobot - 1) > 0.0001) {
+        return response()->json([
+        'success' => false,
+        'message' => "Perhitungan tidak dapat dilakukan. Total bobot saat ini {$totalBobot}. Total bobot harus tepat 1."
+        ], 422);
+        }
         try {
             $saw = new SawService($siswa_id);
             $saw->hitungRekomendasi();
@@ -74,35 +83,73 @@ class SawController extends Controller
     /**
      * Mengeksekusi perhitungan massal HANYA untuk role 'siswa'
      */
-    public function calculateAll()
-    {
-        try {
-            // Hanya ambil ID siswa yang memiliki role 'siswa' di tabel users
-            $siswas = DB::table('siswa')
-                ->join('users', 'siswa.user_id', '=', 'users.id')
-                ->where('users.role', 'siswa') // FILTER ROLE SISWA
-                ->pluck('siswa.id');
-                
-            $berhasil = 0;
-            $gagal = 0;
+public function calculateAll()
+{
+    try {
 
-            foreach ($siswas as $siswa_id) {
-                try {
-                    $saw = new SawService($siswa_id);
-                    $saw->hitungRekomendasi();
-                    $berhasil++;
-                } catch (\Exception $e) {
-                    $gagal++;
-                }
-            }
+        // VALIDASI TOTAL BOBOT
+        $totalBobot = DB::table('kriteria')
+            ->where('is_active', true)
+            ->sum('bobot');
 
+        if (abs($totalBobot - 1) > 0.0001) {
             return response()->json([
-                'message' => "Perhitungan selesai. $berhasil Siswa berhasil dihitung, $gagal data belum lengkap.",
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+                'success' => false,
+                'message' => "Perhitungan tidak dapat dilakukan. Total bobot saat ini {$totalBobot}. Total bobot harus tepat 1."
+            ], 422);
         }
+
+        // VALIDASI KRITERIA
+        $jumlahKriteria = DB::table('kriteria')
+            ->where('is_active', true)
+            ->count();
+
+        if ($jumlahKriteria == 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Belum ada kriteria aktif.'
+            ], 422);
+        }
+
+        // AMBIL SISWA
+        $siswas = DB::table('siswa')
+            ->join('users', 'siswa.user_id', '=', 'users.id')
+            ->where('users.role', 'siswa')
+            ->pluck('siswa.id');
+
+        $berhasil = 0;
+        $gagal = 0;
+
+        foreach ($siswas as $siswa_id) {
+
+            try {
+
+                $saw = new SawService($siswa_id);
+                $saw->hitungRekomendasi();
+
+                $berhasil++;
+
+            } catch (\Exception $e) {
+
+                $gagal++;
+
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Perhitungan selesai. {$berhasil} siswa berhasil dihitung, {$gagal} gagal dihitung."
+        ], 200);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+        ], 500);
+
     }
+}
 
     /**
      * Menampilkan hasil detail untuk Modal (Sudah diperbaiki dari error 500)

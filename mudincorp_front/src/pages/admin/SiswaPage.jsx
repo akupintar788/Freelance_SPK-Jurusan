@@ -6,6 +6,7 @@ import {
 } from "../../services/nilaiRaporService.js";
 import { fetchSiswa } from "../../services/siswaService.js";
 import { updateUser } from "../../services/userService.js";
+import Swal from "sweetalert2";
 
 // ── Icon components (inline SVG, no deps) ──────────────────────────
 const Icon = {
@@ -623,12 +624,24 @@ export default function SiswaPage() {
       setNilaiRapor((prev) => [created, ...prev]);
       setFormRapor((c) => ({ ...c, mata_pelajaran: "", nilai: "", semester: "1" }));
       setRaporModalOpen(false);
-      showSuccess("Nilai rapor berhasil ditambahkan.");
+      
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil",
+        text: "Nilai rapor berhasil ditambahkan.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
     } catch (err) {
-      const responseErrors = err.response?.data;
-      setError(responseErrors
-        ? typeof responseErrors === "object" ? Object.values(responseErrors).flat().join(" ") : responseErrors
-        : "Gagal menyimpan nilai rapor.");
+      const message = err.response?.data?.message || "Gagal menyimpan nilai rapor.";
+      setError(message);
+      
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Menyimpan",
+        text: message,
+        confirmButtonColor: "#dc2626"
+      });
     }
   };
 

@@ -1,5 +1,14 @@
-import { useState, useEffect } from "react";
-import { Calculator, AlertCircle, CheckCircle2, Loader2, Play, Eye, X, Table as TableIcon } from "lucide-react";
+import {
+  AlertCircle,
+  Calculator,
+  CheckCircle2,
+  Eye,
+  Loader2,
+  Play,
+  Table as TableIcon,
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { API_BASE, authFetchHeaders } from "../../../config/api.js";
 
 export default function SAWProcessPage() {
@@ -21,7 +30,9 @@ export default function SAWProcessPage() {
   const fetchResults = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/saw/results`, { headers: authFetchHeaders() });
+      const res = await fetch(`${API_BASE}/admin/saw/results`, {
+        headers: authFetchHeaders(),
+      });
       const data = await res.json();
       if (res.ok) setResults(data);
     } catch (err) {
@@ -38,8 +49,8 @@ export default function SAWProcessPage() {
     setSelectedDetail(null);
     try {
       // SESUAIKAN ROUTE INI DENGAN ROUTE LARAVEL UNTUK ADMIN MELIHAT HASIL SISWA
-      const res = await fetch(`${API_BASE}/admin/saw/hasil/${siswaId}`, { 
-        headers: authFetchHeaders() 
+      const res = await fetch(`${API_BASE}/admin/saw/hasil/${siswaId}`, {
+        headers: authFetchHeaders(),
       });
       const data = await res.json();
       if (res.ok) {
@@ -87,36 +98,53 @@ export default function SAWProcessPage() {
     const matriks = selectedDetail.matriks_perhitungan || {};
     const matriksKeputusan = selectedDetail.matriks_keputusan || {};
     const jurusanList = Object.keys(matriks);
-    
-    if (jurusanList.length === 0) return <p className="text-center text-slate-500 py-4">Data perhitungan tidak ditemukan.</p>;
 
-    const kriteriaList = matriks[jurusanList[0]].map(k => ({
+    if (jurusanList.length === 0)
+      return (
+        <p className="text-center text-slate-500 py-4">
+          Data perhitungan tidak ditemukan.
+        </p>
+      );
+
+    const kriteriaList = matriks[jurusanList[0]].map((k) => ({
       kode: k.kode_kriteria,
       nama: k.nama_kriteria,
-      bobot: k.bobot
+      bobot: k.bobot,
     }));
 
     return (
       <div className="space-y-6 mt-4">
         {/* Tabel Nilai Mentah */}
         <div>
-          <h4 className="mb-2 font-semibold text-slate-800">1. Matriks Keputusan (Nilai Mentah)</h4>
+          <h4 className="mb-2 font-semibold text-slate-800">
+            1. Matriks Keputusan (Nilai Mentah)
+          </h4>
           <div className="overflow-x-auto rounded-xl border border-slate-200">
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 text-slate-900 border-b border-slate-200">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Jurusan</th>
                   {kriteriaList.map((k) => (
-                    <th key={k.kode} className="px-4 py-3 font-semibold" title={k.nama}>{k.kode}</th>
+                    <th
+                      key={k.kode}
+                      className="px-4 py-3 font-semibold"
+                      title={k.nama}
+                    >
+                      {k.kode}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {jurusanList.map((jurusan) => (
                   <tr key={jurusan} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-medium text-slate-900">{jurusan}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900">
+                      {jurusan}
+                    </td>
                     {matriksKeputusan[jurusan]?.map((k, idx) => (
-                      <td key={idx} className="px-4 py-3">{k.nilai_mentah}</td>
+                      <td key={idx} className="px-4 py-3">
+                        {k.nilai_mentah}
+                      </td>
                     ))}
                   </tr>
                 ))}
@@ -127,26 +155,34 @@ export default function SAWProcessPage() {
 
         {/* Tabel Normalisasi */}
         <div>
-          <h4 className="mb-2 font-semibold text-slate-800">2. Matriks Normalisasi & Bobot</h4>
+          <h4 className="mb-2 font-semibold text-slate-800">
+            2. Matriks Normalisasi & Bobot
+          </h4>
           <div className="overflow-x-auto rounded-xl border border-slate-200">
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 text-slate-900 border-b border-slate-200">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Jurusan</th>
                   {kriteriaList.map((k) => (
-                    <th key={k.kode} className="px-4 py-3 font-semibold">{k.kode} ({k.bobot})</th>
+                    <th key={k.kode} className="px-4 py-3 font-semibold">
+                      {k.kode} ({k.bobot})
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {jurusanList.map((jurusan) => (
                   <tr key={jurusan} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-medium text-slate-900">{jurusan}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900">
+                      {jurusan}
+                    </td>
                     {matriks[jurusan]?.map((k, idx) => (
                       <td key={idx} className="px-4 py-3">
                         <div className="flex flex-col">
                           <span>{k.nilai_normalisasi}</span>
-                          <span className="text-xs text-sky-600 font-medium">x {k.bobot} = {k.nilai_terbobot}</span>
+                          <span className="text-xs text-sky-600 font-medium">
+                            x {k.bobot} = {k.nilai_terbobot}
+                          </span>
                         </div>
                       </td>
                     ))}
@@ -166,16 +202,11 @@ export default function SAWProcessPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Proses SAW</h1>
-          <p className="text-slate-500 text-sm">Hitung dan lihat hasil rekomendasi jurusan untuk seluruh siswa secara massal.</p>
+          <p className="text-slate-500 text-sm">
+            Hitung dan lihat hasil rekomendasi jurusan untuk seluruh siswa
+            secara massal.
+          </p>
         </div>
-        <button
-          onClick={handleCalculateAll}
-          disabled={calculating}
-          className="flex items-center gap-2 rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-sky-700 disabled:opacity-50"
-        >
-          {calculating ? <Loader2 size={18} className="animate-spin" /> : <Play size={18} />}
-          Hitung Semua Siswa
-        </button>
       </div>
 
       {error && (
@@ -205,35 +236,49 @@ export default function SAWProcessPage() {
                 <tr>
                   <th className="px-6 py-4 font-semibold">Nama Siswa</th>
                   <th className="px-6 py-4 font-semibold">Rekomendasi Utama</th>
-                  <th className="px-6 py-4 font-semibold text-right">Nilai Preferensi</th>
+                  <th className="px-6 py-4 font-semibold text-right">
+                    Nilai Preferensi
+                  </th>
                   <th className="px-6 py-4 font-semibold text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {results.length > 0 ? (
-                  results.filter(r => r.ranking === 1).map((r, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50 transition">
-                      <td className="px-6 py-4 font-medium text-slate-900">{r.siswa_nama}</td>
-                      <td className="px-6 py-4">{r.jurusan_nama || r.jurusan?.nama_jurusan || '-'}</td>
-                      <td className="px-6 py-4 text-right font-semibold text-sky-600">
-                        {Number(r.nilai_akhir).toFixed(4)}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <button
-                          onClick={() => handleViewDetail(r.siswa_id)}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-sky-100 hover:text-sky-700"
-                        >
-                          <Eye size={14} /> Detail
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                  results
+                    .filter((r) => r.ranking === 1)
+                    .map((r, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50 transition">
+                        <td className="px-6 py-4 font-medium text-slate-900">
+                          {r.siswa_nama}
+                        </td>
+                        <td className="px-6 py-4">
+                          {r.jurusan_nama || r.jurusan?.nama_jurusan || "-"}
+                        </td>
+                        <td className="px-6 py-4 text-right font-semibold text-sky-600">
+                          {Number(r.nilai_akhir).toFixed(4)}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <button
+                            onClick={() => handleViewDetail(r.siswa_id)}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-sky-100 hover:text-sky-700"
+                          >
+                            <Eye size={14} /> Detail
+                          </button>
+                        </td>
+                      </tr>
+                    ))
                 ) : (
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
+                    <td
+                      colSpan={4}
+                      className="px-6 py-12 text-center text-slate-500"
+                    >
                       <div className="flex flex-col items-center justify-center">
                         <Calculator size={32} className="mb-2 text-slate-300" />
-                        <p>Belum ada data perhitungan. Klik "Hitung Semua Siswa" untuk memulai.</p>
+                        <p>
+                          Belum ada data perhitungan. Klik "Hitung Semua Siswa"
+                          untuk memulai.
+                        </p>
                       </div>
                     </td>
                   </tr>
@@ -247,22 +292,35 @@ export default function SAWProcessPage() {
       {/* MODAL / POPUP DETAIL PERHITUNGAN */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in p-4">
-          <div className="w-full max-w-5xl rounded-3xl bg-white shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            
+          <div className="w-full max-w-4xl overflow-hidden rounded-[28px] bg-white shadow-2xl flex flex-col max-h-[90vh]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 bg-slate-50">
-              <div className="flex items-center gap-3">
-                <TableIcon className="text-sky-600" />
-                <h3 className="text-lg font-bold text-slate-900">
-                  Transparansi Detail - {selectedDetail?.rekomendasi_utama?.nama_siswa || "Siswa"}
-                </h3>
+            <div
+              className="relative overflow-hidden px-6 py-5"
+              style={{
+                background:
+                  "linear-gradient(135deg, #1e293b 0%, #334155 50%, #1e40af 100%)",
+              }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <TableIcon className="text-white" />
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-200">
+                      Detail Perhitungan
+                    </p>
+                    <h3 className="text-lg font-bold text-white">
+                      Transparansi Detail -{" "}
+                      {selectedDetail?.rekomendasi_utama?.nama_siswa || "Siswa"}
+                    </h3>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-white hover:bg-white/30 transition"
+                >
+                  <X size={20} />
+                </button>
               </div>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-full p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition"
-              >
-                <X size={20} />
-              </button>
             </div>
 
             {/* Modal Body */}
@@ -270,25 +328,38 @@ export default function SAWProcessPage() {
               {loadingDetail ? (
                 <div className="flex items-center justify-center p-12">
                   <Loader2 size={32} className="animate-spin text-sky-500" />
-                  <span className="ml-3 text-slate-500">Memuat detail matriks...</span>
+                  <span className="ml-3 text-slate-500">
+                    Memuat detail matriks...
+                  </span>
                 </div>
               ) : (
                 <>
                   {selectedDetail?.rekomendasi_utama && (
                     <div className="mb-6 rounded-2xl bg-sky-50 p-5 border border-sky-100">
-                      <p className="text-sm text-sky-700 font-semibold mb-1">Rekomendasi Utama (Rank #1)</p>
-                      <h4 className="text-2xl font-bold text-sky-900">{selectedDetail.rekomendasi_utama.jurusan_rekomendasi}</h4>
-                      <p className="text-sky-800 text-sm">Skor Akhir: <span className="font-bold">{Number(selectedDetail.rekomendasi_utama.skor_tertinggi).toFixed(4)}</span></p>
+                      <p className="text-sm text-sky-700 font-semibold mb-1">
+                        Rekomendasi Utama (Rank #1)
+                      </p>
+                      <h4 className="text-2xl font-bold text-sky-900">
+                        {selectedDetail.rekomendasi_utama.jurusan_rekomendasi}
+                      </h4>
+                      <p className="text-sky-800 text-sm">
+                        Skor Akhir:{" "}
+                        <span className="font-bold">
+                          {Number(
+                            selectedDetail.rekomendasi_utama.skor_tertinggi,
+                          ).toFixed(4)}
+                        </span>
+                      </p>
                     </div>
                   )}
                   {renderDetailTables()}
                 </>
               )}
             </div>
-            
+
             {/* Modal Footer */}
             <div className="border-t border-slate-200 bg-slate-50 px-6 py-4 text-right">
-              <button 
+              <button
                 onClick={() => setIsModalOpen(false)}
                 className="rounded-xl bg-slate-800 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-700 transition"
               >

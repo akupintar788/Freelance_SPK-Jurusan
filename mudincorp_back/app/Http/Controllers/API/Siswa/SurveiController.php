@@ -5,7 +5,7 @@ namespace App\Http\Controllers\API\Siswa;
 use App\Http\Controllers\Controller;
 use App\Models\JawabanSurvei;
 use App\Models\PertanyaanSurvei;
-use App\Services\SawService; // ✅ FIX: Pastikan penulisan nama class konsisten (SawService)
+use App\Services\SawService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -17,12 +17,35 @@ class SurveiController extends Controller
      */
     public function index(Request $request)
     {
+        $siswa = DB::table('siswa')
+            ->where('user_id', $request->user()->id)
+            ->first();
+
+        if (!$siswa) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data siswa tidak ditemukan.'
+            ], 404);
+        }
+
+        $punyaNilaiRapor = DB::table('nilai_rapor')
+            ->where('siswa_id', $siswa->id)
+            ->exists();
+
+        if (!$punyaNilaiRapor) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nilai rapor Anda belum diinput oleh Admin/Guru BK. Silakan lapor terlebih dahulu.'
+            ], 403);
+        }
+
         $query = PertanyaanSurvei::with(['jurusan'])
             ->when($request->tipe, fn($q) => $q->where('tipe', $request->tipe))
             ->orderBy('jurusan_id')
             ->orderBy('id');
 
         return response()->json([
+            'success' => true,
             'data' => $query->get()
         ]);
     }
@@ -32,8 +55,8 @@ class SurveiController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. Validasi request dari React
         $validator = Validator::make($request->all(), [
+            'tipe' => 'nullable|string|in:bakat,minat',
             'jawaban' => 'required|array',
             'jawaban.*.pertanyaan_id' => 'required|exists:pertanyaan_survei,id',
             'jawaban.*.skor' => 'required|integer|min:1|max:5',
@@ -43,7 +66,6 @@ class SurveiController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // 2. Ambil data siswa berdasarkan user yang sedang login (Auth Sanctum)
         $siswa = DB::table('siswa')->where('user_id', $request->user()->id)->first();
 
         if (!$siswa) {
@@ -53,8 +75,18 @@ class SurveiController extends Controller
             ], 404);
         }
 
+        $punyaNilaiRapor = DB::table('nilai_rapor')
+            ->where('siswa_id', $siswa->id)
+            ->exists();
+
+        if (!$punyaNilaiRapor) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Nilai rapor Anda belum diinput oleh Admin/Guru BK. Silakan lapor terlebih dahulu.'
+            ], 403);
+        }
+
         try {
-            // 3. Simpan seluruh jawaban survei ke database
             DB::transaction(function () use ($request, $siswa) {
                 foreach ($request->jawaban as $jawab) {
                     JawabanSurvei::updateOrCreate(
@@ -69,23 +101,38 @@ class SurveiController extends Controller
                 }
             });
 
-            // =================================================================
-            // 🚀 JALAN KELUAR UTAMA: Hitung Rekomendasi SAW dengan ID Siswa Nyata
-            // =================================================================
-            // Memastikan nilai ID dilempar sebagai integer murni, bukan null
             $siswaId = (int) $siswa->id;
-            
-            // Instansiasi objek secara manual menggunakan penulisan class yang benar
-            $sawService = new SawService($siswaId);
-            
-            // Eksekusi kalkulasi algoritma SPK SAW
-            $sawService->hitungRekomendasi();
+            $hasBakat = DB::table('jawaban_survei')
+                ->join('pertanyaan_survei', 'jawaban_survei.pertanyaan_id', '=', 'pertanyaan_survei.id')
+                ->where('jawaban_survei.siswa_id', $siswaId)
+                ->where('pertanyaan_survei.tipe', 'bakat')
+                ->exists();
+
+            $hasMinat = DB::table('jawaban_survei')
+                ->join('pertanyaan_survei', 'jawaban_survei.pertanyaan_id', '=', 'pertanyaan_survei.id')
+                ->where('jawaban_survei.siswa_id', $siswaId)
+                ->where('pertanyaan_survei.tipe', 'minat')
+                ->exists();
+
+            if ($hasBakat && $hasMinat) {
+                $sawService = new SawService($siswaId);
+                $sawService->hitungRekomendasi();
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Survei bakat dan minat berhasil disimpan serta rekomendasi jurusan telah diperbarui.'
+                ], 201);
+            }
+
+            $tipe = $request->input('tipe');
+            $message = $tipe === 'bakat'
+                ? 'Survei bakat berhasil disimpan. Lanjutkan survei minat untuk melihat hasil rekomendasi.'
+                : 'Survei berhasil disimpan. Lanjutkan bagian survei lainnya untuk melihat hasil rekomendasi.';
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Survei berhasil disimpan dan rekomendasi jurusan telah diperbarui!'
+                'message' => $message
             ], 201);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -99,7 +146,6 @@ class SurveiController extends Controller
      */
     public function status(Request $request)
     {
-        // Ambil data lewat query builder agar konsisten dengan store()
         $siswa = DB::table('siswa')->where('user_id', $request->user()->id)->first();
 
         if (!$siswa) {
@@ -134,13 +180,12 @@ class SurveiController extends Controller
         $summary = JawabanSurvei::with('pertanyaanSurvei')
             ->where('siswa_id', $siswaId)
             ->get()
-            ->groupBy(fn (JawabanSurvei $jawaban) => strtolower(trim((string)($jawaban->pertanyaanSurvei?->tipe ?? ''))))
-            ->map
-            ->count();
+            ->groupBy(fn(JawabanSurvei $jawaban) => strtolower(trim((string)($jawaban->pertanyaanSurvei?->tipe ?? ''))))
+            ->map(fn($group) => $group->count());
 
         return [
-            'bakat' => $summary->get('bakat', 0),
-            'minat' => $summary->get('minat', 0),
+            'bakat' => (int) $summary->get('bakat', 0),
+            'minat' => (int) $summary->get('minat', 0),
         ];
     }
 }

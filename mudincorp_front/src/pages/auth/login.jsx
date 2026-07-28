@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { login } from "../../services/authService.js";
 
 export default function LoginPage() {
@@ -114,14 +114,9 @@ export default function LoginPage() {
               {loading ? "Memeriksa..." : "Masuk"}
             </button>
           </form>
-          <div className="mt-6 flex items-center justify-between text-sm text-slate-500">
-            <p>Belum punya akun?</p>
-            <Link
-              to="/auth/register"
-              className="font-semibold text-sky-600 hover:text-sky-700"
-            >
-              Daftar sekarang
-            </Link>
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            Akun siswa hanya dibuat oleh Guru BK atau Admin. Silakan hubungi
+            pihak sekolah untuk pendaftaran.
           </div>
         </section>
       </div>

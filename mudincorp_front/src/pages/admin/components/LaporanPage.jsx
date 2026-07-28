@@ -101,32 +101,32 @@ return (
     {/* Statistik */}
     <div className="grid gap-6 lg:grid-cols-3">
 
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         <p className="text-sm text-slate-500">
           Total Siswa
         </p>
 
-        <h3 className="mt-3 text-5xl font-bold text-slate-800">
+        <h3 className="mt-3 text-4xl font-bold text-slate-800">
           {stats.total_siswa}
         </h3>
       </div>
 
-      <div className="rounded-3xl border border-emerald-100 bg-emerald-50/50 p-6 shadow-sm">
+      <div className="rounded-3xl border border-emerald-100 bg-emerald-50/50 p-5 shadow-sm">
         <p className="text-sm text-slate-500">
           Sudah Diproses SAW
         </p>
 
-        <h3 className="mt-3 text-5xl font-bold text-emerald-600">
+        <h3 className="mt-3 text-4xl font-bold text-emerald-600">
           {stats.sudah_diproses}
         </h3>
       </div>
 
-      <div className="rounded-3xl border border-orange-100 bg-orange-50/50 p-6 shadow-sm">
+      <div className="rounded-3xl border border-orange-100 bg-orange-50/50 p-5 shadow-sm">
         <p className="text-sm text-slate-500">
           Belum Diproses SAW
         </p>
 
-        <h3 className="mt-3 text-5xl font-bold text-orange-500">
+        <h3 className="mt-3 text-4xl font-bold text-orange-500">
           {stats.belum_diproses}
         </h3>
       </div>

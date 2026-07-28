@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NilaiRapor;
 use App\Models\Siswa;
 use App\Models\NilaiSiswa;
+use App\Models\Kriteria;
 use Illuminate\Http\Request;
 use App\Exports\NilaiRaporSiswaExport;
 use App\Imports\NilaiRaporSiswaImport;
@@ -40,6 +41,31 @@ class NilaiRaporController extends Controller
             'semester'       => 'required|integer|min:1|max:6',
             'tahun_ajaran'   => 'required|string|max:20',
         ]);
+
+        $mataPelajaran = strtoupper(trim($request->mata_pelajaran));
+        
+        $ipaSubjects = ['FISIKA', 'KIMIA', 'BIOLOGI', 'INFORMATIKA'];
+        $ipsSubjects = ['EKONOMI', 'AKUNTANSI', 'GEOGRAFI', 'SOSIOLOGI', 'SEJARAH', 'SEJARAH PEMINATAN'];
+
+        $isIpa = in_array($mataPelajaran, $ipaSubjects);
+        $isIps = in_array($mataPelajaran, $ipsSubjects);
+
+        if ($isIpa || $isIps) {
+            $lawanGroup = $isIpa ? 'IPS' : 'IPA';
+            $lawanSubjects = $isIpa ? $ipsSubjects : $ipaSubjects;
+
+            $hasLawan = NilaiRapor::where('siswa_id', $request->siswa_id)
+                ->where(function ($query) use ($lawanSubjects) {
+                    foreach ($lawanSubjects as $subj) {
+                        $query->orWhere(DB::raw('UPPER(mata_pelajaran)'), $subj);
+                    }
+                })
+                ->exists();
+
+            if ($hasLawan) {
+                return response()->json(['message' => "Tidak dapat menambahkan $mataPelajaran (Kelompok " . ($isIpa ? 'IPA' : 'IPS') . "). Siswa ini sudah memiliki nilai dari kelompok $lawanGroup."], 422);
+            }
+        }
 
         try {
             DB::beginTransaction();
@@ -93,6 +119,32 @@ class NilaiRaporController extends Controller
             'semester'       => 'required|integer|min:1|max:6',
             'tahun_ajaran'   => 'required|string|max:20',
         ]);
+
+        $mataPelajaran = strtoupper(trim($request->mata_pelajaran));
+        
+        $ipaSubjects = ['FISIKA', 'KIMIA', 'BIOLOGI', 'INFORMATIKA'];
+        $ipsSubjects = ['EKONOMI', 'AKUNTANSI', 'GEOGRAFI', 'SOSIOLOGI', 'SEJARAH', 'SEJARAH PEMINATAN'];
+
+        $isIpa = in_array($mataPelajaran, $ipaSubjects);
+        $isIps = in_array($mataPelajaran, $ipsSubjects);
+
+        if ($isIpa || $isIps) {
+            $lawanGroup = $isIpa ? 'IPS' : 'IPA';
+            $lawanSubjects = $isIpa ? $ipsSubjects : $ipaSubjects;
+
+            $hasLawan = NilaiRapor::where('siswa_id', $request->siswa_id)
+                ->where('id', '!=', $id)
+                ->where(function ($query) use ($lawanSubjects) {
+                    foreach ($lawanSubjects as $subj) {
+                        $query->orWhere(DB::raw('UPPER(mata_pelajaran)'), $subj);
+                    }
+                })
+                ->exists();
+
+            if ($hasLawan) {
+                return response()->json(['message' => "Tidak dapat mengubah mata pelajaran menjadi $mataPelajaran (Kelompok " . ($isIpa ? 'IPA' : 'IPS') . "). Siswa ini sudah memiliki nilai dari kelompok $lawanGroup."], 422);
+            }
+        }
 
         try {
             DB::beginTransaction();
@@ -153,7 +205,7 @@ class NilaiRaporController extends Controller
         try {
             $siswa = Siswa::findOrFail($siswaId);
             $data = NilaiRapor::where('siswa_id', $siswaId)->get();
-            
+
             $headers = ['Mata Pelajaran', 'Nilai', 'Semester', 'Tahun Ajaran'];
             $filename = 'Format_Nilai_' . str_replace(' ', '_', $siswa->nama) . '.xlsx';
 
@@ -223,11 +275,20 @@ class NilaiRaporController extends Controller
         // Hitung rata-rata nilai raport siswa dari tabel nilai_rapor
         $rataRata = NilaiRapor::where('siswa_id', $siswaId)->avg('nilai') ?? 0;
 
-        // Otomatis update Kriteria Akademik (C1, id=1) di tabel nilai_siswa sebagai bahan hitung SAW
+        // Cari kriteria akademik aktif yang benar berdasarkan sumber_data = akademik
+        $kriteriaAkademik = Kriteria::where('sumber_data', 'akademik')
+            ->where('is_active', true)
+            ->orderBy('urutan')
+            ->first();
+
+        if (!$kriteriaAkademik) {
+            return;
+        }
+
         NilaiSiswa::updateOrCreate(
             [
                 'siswa_id'    => $siswaId,
-                'kriteria_id' => 1, // C1 = Nilai Akademik
+                'kriteria_id' => $kriteriaAkademik->id,
             ],
             ['nilai' => $rataRata]
         );

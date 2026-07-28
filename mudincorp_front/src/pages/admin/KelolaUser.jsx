@@ -1,9 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  createUser,
-  deleteUser,
-  fetchUsers,
-} from "../../services/userService.js";
+import {createUser,deleteUser,fetchUsers,} from "../../services/userService.js";
 
 const roleLabels = {
   admin: "Administrator",
@@ -167,7 +163,18 @@ export default function KelolaUser() {
   const siswaCount = visibleUsers.filter((u) => u.role === "siswa").length;
 
   return (
-    <section className="min-h-screen bg-slate-100 p-6">
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        .siswa-page * { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .table-row-hover:hover { background: #f8faff; }
+        @keyframes slideUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+        .animate-slideup { animation: slideUp .2s ease; }
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+        .animate-fadein { animation: fadeIn .15s ease; }
+      `}</style>
+
+      <section className="siswa-page min-h-screen bg-slate-100 p-6">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* HEADER */}
         <div className="rounded-3xl bg-white p-6 shadow-sm">
@@ -386,7 +393,7 @@ export default function KelolaUser() {
                   filteredUsers.map((user) => (
                     <tr
                       key={user.id}
-                      className="border-b border-slate-100 hover:bg-slate-50"
+                      className="border-b border-slate-100 table-row-hover"
                     >
                       <td className="px-4 py-4 font-semibold">{user.name}</td>
                       <td className="px-4 py-4">{user.nip}</td>
@@ -415,5 +422,6 @@ export default function KelolaUser() {
         </div>
       </div>
     </section>
+    </>
   );
 }

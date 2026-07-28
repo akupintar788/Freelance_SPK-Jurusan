@@ -1,6 +1,6 @@
+import {Eye,FileSpreadsheet,FileText,Plus,Trash2,Upload,} from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Download, Upload, FileSpreadsheet, FileText, Loader2, Plus, Eye, Trash2 } from "lucide-react";
-import axios from "axios"; // Gunakan instance client bawaan Anda jika ada rute dasar auth
+import Swal from "sweetalert2";
 import client from "../../services/authService.js"; // Ganti dengan path instance axios Anda jika ada
 import {
   createNilaiRapor,
@@ -19,11 +19,11 @@ export default function NilaiRaporPage() {
   const [showForm, setShowForm] = useState(false);
   const [selectedSiswa, setSelectedSiswa] = useState(null);
   const [expandedStudent, setExpandedStudent] = useState(null);
-  
+
   // State pelacak proses upload khusus per siswa
   const [uploadingSiswaId, setUploadingSiswaId] = useState(null);
   const fileInputRef = useRef(null);
-  
+
   const [filterMataPelajaran, setFilterMataPelajaran] = useState("");
   const [filterTahunAjaran, setFilterTahunAjaran] = useState("");
   const [form, setForm] = useState({
@@ -59,13 +59,19 @@ export default function NilaiRaporPage() {
 
   const handleExportExcelSiswa = async (siswaId, namaSiswa) => {
     try {
-      const response = await client.get(`/admin/nilai-rapor/siswa/${siswaId}/export-excel`, {
-        responseType: "blob",
-      });
+      const response = await client.get(
+        `/admin/nilai-rapor/siswa/${siswaId}/export-excel`,
+        {
+          responseType: "blob",
+        },
+      );
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `Format_Nilai_${namaSiswa.replace(/\s+/g, "_")}.xlsx`);
+      link.setAttribute(
+        "download",
+        `Format_Nilai_${namaSiswa.replace(/\s+/g, "_")}.xlsx`,
+      );
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -77,13 +83,19 @@ export default function NilaiRaporPage() {
 
   const handleExportPdfSiswa = async (siswaId, namaSiswa) => {
     try {
-      const response = await client.get(`/admin/nilai-rapor/siswa/${siswaId}/export-pdf`, {
-        responseType: "blob",
-      });
+      const response = await client.get(
+        `/admin/nilai-rapor/siswa/${siswaId}/export-pdf`,
+        {
+          responseType: "blob",
+        },
+      );
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `Rapor_${namaSiswa.replace(/\s+/g, "_")}.pdf`);
+      link.setAttribute(
+        "download",
+        `Rapor_${namaSiswa.replace(/\s+/g, "_")}.pdf`,
+      );
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -102,9 +114,13 @@ export default function NilaiRaporPage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      await client.post(`/admin/nilai-rapor/siswa/${uploadingSiswaId}/import-excel`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await client.post(
+        `/admin/nilai-rapor/siswa/${uploadingSiswaId}/import-excel`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
 
       setSuccessMessage("Nilai siswa berhasil diperbarui dari Excel.");
       setTimeout(() => setSuccessMessage(""), 3000);
@@ -146,7 +162,16 @@ export default function NilaiRaporPage() {
       });
       loadData();
     } catch (err) {
-      setError(err.response?.data?.message || "Gagal menambahkan nilai.");
+      console.log("Error menambahkan nilai:", err);
+      const errorMessage = err.response?.data?.message || "Gagal menambahkan nilai.";
+      setError(errorMessage);
+      
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Menyimpan",
+        text: errorMessage,
+        confirmButtonColor: "#dc2626"
+      });
     }
   }
 
@@ -175,20 +200,28 @@ export default function NilaiRaporPage() {
   }
 
   const uniqueSubjects = useMemo(() => {
-    return [...new Set(nilaiRapor.map((item) => item.mata_pelajaran).filter(Boolean))];
+    return [
+      ...new Set(nilaiRapor.map((item) => item.mata_pelajaran).filter(Boolean)),
+    ];
   }, [nilaiRapor]);
 
   const uniqueYears = useMemo(() => {
-    return [...new Set(nilaiRapor.map((item) => item.tahun_ajaran).filter(Boolean))];
+    return [
+      ...new Set(nilaiRapor.map((item) => item.tahun_ajaran).filter(Boolean)),
+    ];
   }, [nilaiRapor]);
 
   const filteredData = useMemo(() => {
     let filtered = [...nilaiRapor];
     if (filterMataPelajaran) {
-      filtered = filtered.filter((item) => item.mata_pelajaran === filterMataPelajaran);
+      filtered = filtered.filter(
+        (item) => item.mata_pelajaran === filterMataPelajaran,
+      );
     }
     if (filterTahunAjaran) {
-      filtered = filtered.filter((item) => item.tahun_ajaran === filterTahunAjaran);
+      filtered = filtered.filter(
+        (item) => item.tahun_ajaran === filterTahunAjaran,
+      );
     }
 
     const grouped = {};
@@ -204,7 +237,9 @@ export default function NilaiRaporPage() {
 
     return Object.values(grouped).map((group) => ({
       ...group,
-      rata_rata: (group.nilai.reduce((a, b) => a + b, 0) / group.nilai.length).toFixed(2),
+      rata_rata: (
+        group.nilai.reduce((a, b) => a + b, 0) / group.nilai.length
+      ).toFixed(2),
     }));
   }, [nilaiRapor, filterMataPelajaran, filterTahunAjaran]);
 
@@ -223,7 +258,9 @@ export default function NilaiRaporPage() {
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900">Nilai Rapor</h1>
-          <p className="mt-1 text-sm text-slate-500">Kelola data nilai siswa secara massal atau per individu</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Kelola data nilai siswa secara massal atau per individu
+          </p>
         </div>
 
         {error && (
@@ -247,7 +284,9 @@ export default function NilaiRaporPage() {
           >
             <option value="">Semua Mata Pelajaran</option>
             {uniqueSubjects.map((item) => (
-              <option key={item} value={item}>{item}</option>
+              <option key={item} value={item}>
+                {item}
+              </option>
             ))}
           </select>
 
@@ -258,7 +297,9 @@ export default function NilaiRaporPage() {
           >
             <option value="">Semua Tahun Ajaran</option>
             {uniqueYears.map((item) => (
-              <option key={item} value={item}>{item}</option>
+              <option key={item} value={item}>
+                {item}
+              </option>
             ))}
           </select>
         </div>
@@ -270,44 +311,77 @@ export default function NilaiRaporPage() {
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200">
-                <th className="px-4 py-4 text-left font-semibold text-slate-500">No</th>
-                <th className="px-4 py-4 text-left font-semibold text-slate-500">Nama</th>
-                <th className="px-4 py-4 text-left font-semibold text-slate-500">Tahun Ajaran</th>
-                <th className="px-4 py-4 text-left font-semibold text-slate-500">Rata-Rata</th>
-                <th className="px-4 py-4 text-center font-semibold text-slate-500">Kelola Dokumen</th>
-                <th className="px-4 py-4 text-left font-semibold text-slate-500">Aksi</th>
+                <th className="px-4 py-4 text-left font-semibold text-slate-500">
+                  No
+                </th>
+                <th className="px-4 py-4 text-left font-semibold text-slate-500">
+                  Nama
+                </th>
+                <th className="px-4 py-4 text-left font-semibold text-slate-500">
+                  Tahun Ajaran
+                </th>
+                <th className="px-4 py-4 text-left font-semibold text-slate-500">
+                  Rata-Rata
+                </th>
+                <th className="px-4 py-4 text-center font-semibold text-slate-500">
+                  Kelola Dokumen
+                </th>
+                <th className="px-4 py-4 text-left font-semibold text-slate-500">
+                  Aksi
+                </th>
               </tr>
             </thead>
 
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-slate-500">Memuat data...</td>
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-slate-500"
+                  >
+                    Memuat data...
+                  </td>
                 </tr>
               ) : filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-slate-500">Tidak ada data</td>
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-slate-500"
+                  >
+                    Tidak ada data
+                  </td>
                 </tr>
               ) : (
                 filteredData.map((data, index) => (
                   <React.Fragment key={data.siswa.id}>
                     <tr className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="px-4 py-4">{index + 1}</td>
-                      <td className="px-4 py-4 font-semibold text-slate-900">{data.siswa.nama}</td>
-                      <td className="px-4 py-4">{data.items[0]?.tahun_ajaran}</td>
-                      <td className="px-4 py-4 font-bold text-sky-700">{data.rata_rata}</td>
-                      
+                      <td className="px-4 py-4 font-semibold text-slate-900">
+                        {data.siswa.nama}
+                      </td>
+                      <td className="px-4 py-4">
+                        {data.items[0]?.tahun_ajaran}
+                      </td>
+                      <td className="px-4 py-4 font-bold text-sky-700">
+                        {data.rata_rata}
+                      </td>
+
                       {/* FITUR EXCEL & PDF INDIVIDU DI KOLOM BARU (AKSI) */}
                       <td className="px-4 py-4">
                         <div className="flex justify-center gap-1.5">
                           <button
                             title="Export Format Excel Siswa"
-                            onClick={() => handleExportExcelSiswa(data.siswa.id, data.siswa.nama)}
+                            onClick={() =>
+                              handleExportExcelSiswa(
+                                data.siswa.id,
+                                data.siswa.nama,
+                              )
+                            }
                             className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition"
                           >
                             <FileSpreadsheet className="h-4 w-4" />
                           </button>
-                          
+
                           <button
                             title="Import Nilai Excel Siswa"
                             onClick={() => triggerFileInput(data.siswa.id)}
@@ -318,7 +392,12 @@ export default function NilaiRaporPage() {
 
                           <button
                             title="Cetak PDF Nilai Rapor"
-                            onClick={() => handleExportPdfSiswa(data.siswa.id, data.siswa.nama)}
+                            onClick={() =>
+                              handleExportPdfSiswa(
+                                data.siswa.id,
+                                data.siswa.nama,
+                              )
+                            }
                             className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition"
                           >
                             <FileText className="h-4 w-4" />
@@ -340,7 +419,13 @@ export default function NilaiRaporPage() {
                           </button>
 
                           <button
-                            onClick={() => setExpandedStudent(expandedStudent === data.siswa.id ? null : data.siswa.id)}
+                            onClick={() =>
+                              setExpandedStudent(
+                                expandedStudent === data.siswa.id
+                                  ? null
+                                  : data.siswa.id,
+                              )
+                            }
                             className="rounded-xl bg-sky-100 px-3 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-200 flex items-center gap-1"
                           >
                             <Eye className="h-3 w-3" /> Detail
@@ -364,20 +449,41 @@ export default function NilaiRaporPage() {
                             <table className="min-w-full text-sm">
                               <thead className="bg-slate-100">
                                 <tr>
-                                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Mata Pelajaran</th>
-                                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Nilai</th>
-                                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Semester</th>
-                                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Tahun Ajaran</th>
-                                  <th className="px-4 py-3 text-center font-semibold text-slate-600">Opsi</th>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                                    Mata Pelajaran
+                                  </th>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                                    Nilai
+                                  </th>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                                    Semester
+                                  </th>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                                    Tahun Ajaran
+                                  </th>
+                                  <th className="px-4 py-3 text-center font-semibold text-slate-600">
+                                    Opsi
+                                  </th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {data.items.map((item) => (
-                                  <tr key={item.id} className="border-t border-slate-100 hover:bg-slate-50/50">
-                                    <td className="px-4 py-3">{item.mata_pelajaran}</td>
-                                    <td className="px-4 py-3 font-semibold text-slate-800">{item.nilai}</td>
-                                    <td className="px-4 py-3">{item.semester}</td>
-                                    <td className="px-4 py-3">{item.tahun_ajaran}</td>
+                                  <tr
+                                    key={item.id}
+                                    className="border-t border-slate-100 hover:bg-slate-50/50"
+                                  >
+                                    <td className="px-4 py-3">
+                                      {item.mata_pelajaran}
+                                    </td>
+                                    <td className="px-4 py-3 font-semibold text-slate-800">
+                                      {item.nilai}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      {item.semester}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      {item.tahun_ajaran}
+                                    </td>
                                     <td className="px-4 py-3 text-center">
                                       <button
                                         onClick={() => handleDelete(item.id)}
@@ -405,68 +511,98 @@ export default function NilaiRaporPage() {
       {/* MODAL FORM TAMBAH NILAI (Bawaan Anda tetap aman) */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
-            <div className="mb-6 flex items-start justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900">Tambah Nilai</h2>
-                <p className="mt-1 text-sm text-slate-500">{selectedSiswa?.nama}</p>
+          <div className="w-full max-w-2xl overflow-hidden rounded-[28px] bg-white shadow-2xl max-h-[90vh]">
+            <div
+              className="relative overflow-hidden px-6 py-5"
+              style={{
+                background:
+                  "linear-gradient(135deg, #1e293b 0%, #334155 50%, #1e40af 100%)",
+              }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-200">
+                    Input Nilai
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold text-white">
+                    Tambah Nilai Rapor
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-white transition hover:bg-white/30"
+                >
+                  ✕
+                </button>
               </div>
-              <button
-                onClick={() => setShowForm(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-slate-200"
-              >
-                ✕
-              </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
-              <input
-                type="text"
-                value={selectedSiswa?.nama || ""}
-                disabled
-                className="w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-slate-900"
-              />
-              <input
-                type="text"
-                placeholder="Mata Pelajaran"
-                value={form.mata_pelajaran}
-                onChange={(e) => setForm({ ...form, mata_pelajaran: e.target.value })}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-sky-400"
-                required
-              />
-              <input
-                type="number"
-                placeholder="Nilai"
-                value={form.nilai}
-                onChange={(e) => setForm({ ...form, nilai: e.target.value })}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-sky-400"
-                required
-              />
-              <select
-                value={form.semester}
-                onChange={(e) => setForm({ ...form, semester: e.target.value })}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-sky-400"
+            <div className="p-6 overflow-y-auto">
+              <form
+                onSubmit={handleSubmit}
+                className="grid gap-4 md:grid-cols-2"
               >
-                <option value="1">Semester 1</option>
-                <option value="2">Semester 2</option>
-              </select>
-              <input
-                type="text"
-                placeholder="2024/2025"
-                value={form.tahun_ajaran}
-                onChange={(e) => setForm({ ...form, tahun_ajaran: e.target.value })}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-sky-400 md:col-span-2"
-                required
-              />
-              <div className="flex gap-3 md:col-span-2">
-                <button type="submit" className="flex-1 rounded-2xl bg-sky-600 px-5 py-3 font-semibold text-white transition hover:bg-sky-700">
-                  Simpan
-                </button>
-                <button type="button" onClick={() => setShowForm(false)} className="flex-1 rounded-2xl bg-slate-200 px-5 py-3 font-semibold text-slate-900 transition hover:bg-slate-300">
-                  Batal
-                </button>
-              </div>
-            </form>
+                <input
+                  type="text"
+                  value={selectedSiswa?.nama || ""}
+                  disabled
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-slate-900"
+                />
+                <input
+                  type="text"
+                  placeholder="Mata Pelajaran"
+                  value={form.mata_pelajaran}
+                  onChange={(e) =>
+                    setForm({ ...form, mata_pelajaran: e.target.value })
+                  }
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-sky-400"
+                  required
+                />
+                <input
+                  type="number"
+                  placeholder="Nilai"
+                  value={form.nilai}
+                  onChange={(e) => setForm({ ...form, nilai: e.target.value })}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-sky-400"
+                  required
+                />
+                <select
+                  value={form.semester}
+                  onChange={(e) =>
+                    setForm({ ...form, semester: e.target.value })
+                  }
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-sky-400"
+                >
+                  <option value="1">Semester 1</option>
+                  <option value="2">Semester 2</option>
+                </select>
+                <input
+                  type="text"
+                  placeholder="2024/2025"
+                  value={form.tahun_ajaran}
+                  onChange={(e) =>
+                    setForm({ ...form, tahun_ajaran: e.target.value })
+                  }
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-sky-400 md:col-span-2"
+                  required
+                />
+                <div className="flex gap-3 md:col-span-2">
+                  <button
+                    type="submit"
+                    className="flex-1 rounded-2xl bg-sky-600 px-5 py-3 font-semibold text-white transition hover:bg-sky-700"
+                  >
+                    Simpan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    className="flex-1 rounded-2xl bg-slate-200 px-5 py-3 font-semibold text-slate-900 transition hover:bg-slate-300"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

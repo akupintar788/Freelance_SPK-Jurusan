@@ -1,13 +1,8 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import {
-  createKriteria,
-  deleteKriteria,
-  fetchKriteria,
-  updateKriteria,
-} from "../../services/kriteriaService.js";
+import {createKriteria,deleteKriteria,fetchKriteria,updateKriteria,} from "../../services/kriteriaService.js";
 import Badge from "./components/Badge.jsx";
-
+import Swal from "sweetalert2";
 // Sesuaikan dengan enum database kamu
 const SUMBER_DATA_OPTIONS = [
   { value: "akademik", label: "Akademik" },
@@ -26,6 +21,7 @@ const SUMBER_DATA_COLORS = {
 
 export default function KriteriaPage() {
   const [kriterias, setKriterias] = useState([]);
+  const totalBobot = kriterias.reduce((sum, item) => sum + Number(item.bobot || 0),0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -71,7 +67,22 @@ export default function KriteriaPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
+    const bobotBaru = parseFloat(formData.bobot) || 0;
+  const bobotLama = editingId
+    ? parseFloat(kriterias.find((k) => k.id === editingId)?.bobot || 0)
+    : 0;
+  const totalSetelahSubmit = totalBobot - bobotLama + bobotBaru;
+
+  if (Math.abs(totalSetelahSubmit - 1) > 0.001 && totalSetelahSubmit > 1) {
+    Swal.fire({
+      icon: "warning",
+      title: "Bobot Melebihi 1",
+      text: `Total bobot akan menjadi ${totalSetelahSubmit.toFixed(2)}. Maksimal 1.00.`,
+    });
+    return;
+  }
+
+  setSubmitting(true);
     setError("");
     setSuccessMsg("");
 
@@ -84,13 +95,27 @@ export default function KriteriaPage() {
         bobot: parseFloat(formData.bobot),
       };
 
-      if (editingId) {
-        await updateKriteria(editingId, payload);
-        setSuccessMsg("Kriteria berhasil diperbarui.");
-      } else {
-        await createKriteria(payload);
-        setSuccessMsg("Kriteria berhasil ditambahkan.");
-      }
+if (editingId) {
+  await updateKriteria(editingId, payload);
+
+  Swal.fire({
+    icon: "success",
+    title: "Berhasil",
+    text: "Kriteria berhasil diperbarui",
+    confirmButtonColor: "#0284c7",
+  });
+
+} else {
+
+  await createKriteria(payload);
+
+  Swal.fire({
+    icon: "success",
+    title: "Berhasil",
+    text: "Kriteria berhasil ditambahkan",
+    confirmButtonColor: "#0284c7",
+  });
+}
 
       setFormData(initialForm);
       setEditingId(null);
@@ -98,23 +123,33 @@ export default function KriteriaPage() {
 
       setTimeout(() => setSuccessMsg(""), 3000);
     } catch (err) {
-      console.error(err);
-      if (err.response?.data) {
-        const errors = err.response.data;
-        if (typeof errors === "object") {
-          const firstError = Object.values(errors)[0];
-          setError(
-            Array.isArray(firstError)
-              ? firstError[0]
-              : "Terjadi kesalahan validasi.",
-          );
-        } else {
-          setError("Gagal menyimpan kriteria.");
-        }
-      } else {
-        setError("Gagal menyambung ke server.");
-      }
-    } finally {
+
+  console.error(err);
+
+  let message = "Terjadi kesalahan";
+
+  if (err.response?.data?.message) {
+
+    message = err.response.data.message;
+
+  } else if (err.response?.data) {
+
+    const errors = err.response.data;
+
+    const firstError = Object.values(errors)[0];
+
+    message = Array.isArray(firstError)
+      ? firstError[0]
+      : "Terjadi kesalahan validasi.";
+  }
+
+  Swal.fire({
+    icon: "error",
+    title: "Gagal",
+    text: message,
+    confirmButtonColor: "#dc2626",
+  });
+} finally {
       setSubmitting(false);
     }
   };
@@ -152,7 +187,18 @@ export default function KriteriaPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        .siswa-page * { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .table-row-hover:hover { background: #f8faff; }
+        @keyframes slideUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+        .animate-slideup { animation: slideUp .2s ease; }
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+        .animate-fadein { animation: fadeIn .15s ease; }
+      `}</style>
+
+      <div className="siswa-page space-y-6">
       {/* Alert Error */}
       {error && (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -171,7 +217,7 @@ export default function KriteriaPage() {
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-5 flex items-center gap-3 text-slate-900">
           <span className="inline-flex h-3 w-3 rounded-full bg-sky-500"></span>
-          <h2 className="text-sm font-semibold">
+          <h2 className="text-sm font-semibold text-black">
             {editingId ? "Edit Kriteria" : "Tambah Kriteria"}
           </h2>
         </div>
@@ -187,7 +233,7 @@ export default function KriteriaPage() {
                 value={formData.kode}
                 onChange={handleChange}
                 placeholder="Contoh: C1"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-sky-400"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-sky-400"
                 required
               />
             </label>
@@ -201,7 +247,7 @@ export default function KriteriaPage() {
                 value={formData.nama}
                 onChange={handleChange}
                 placeholder="Contoh: Nilai Rapor Matematika"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-sky-400"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-sky-400"
                 required
               />
             </label>
@@ -213,7 +259,7 @@ export default function KriteriaPage() {
                 name="sumber_data"
                 value={formData.sumber_data}
                 onChange={handleChange}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-sky-400"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-sky-400"
                 required
               >
                 {SUMBER_DATA_OPTIONS.map((opt) => (
@@ -231,7 +277,7 @@ export default function KriteriaPage() {
                 name="tipe"
                 value={formData.tipe}
                 onChange={handleChange}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-sky-400"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-sky-400"
                 required
               >
                 {TIPE_OPTIONS.map((opt) => (
@@ -254,7 +300,7 @@ export default function KriteriaPage() {
                 value={formData.bobot}
                 onChange={handleChange}
                 placeholder="0.3"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-sky-400"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-sky-400"
                 required
               />
             </label>
@@ -283,13 +329,30 @@ export default function KriteriaPage() {
       </section>
 
       {/* TABEL SINKRON DATABASE */}
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-5 flex items-center gap-3 text-slate-900">
-          <span className="inline-flex h-3 w-3 rounded-full bg-sky-500"></span>
-          <h2 className="text-sm font-semibold">Daftar Kriteria</h2>
-        </div>
+<section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+  <div className="mb-5 flex items-center gap-3 text-slate-900">
+    <span className="inline-flex h-3 w-3 rounded-full bg-sky-500"></span>
+    <h2 className="text-sm font-semibold text-black">Daftar Kriteria</h2>
+  </div>
+  {/* STATUS TOTAL BOBOT — sudah ada, tinggal perbaiki kondisi warning */}
+<div className={`mb-4 rounded-2xl p-4 font-semibold ${
+  Math.abs(totalBobot - 1) < 0.001
+    ? "bg-emerald-50 border border-emerald-200 text-emerald-700"
+    : totalBobot > 1
+    ? "bg-rose-50 border border-rose-200 text-rose-700"
+    : "bg-amber-50 border border-amber-200 text-amber-700"  // ← kurang dari 1
+}`}>
+  Total Bobot: {totalBobot.toFixed(2)} / 1.00
+  <div className="mt-1 text-sm">
+    {Math.abs(totalBobot - 1) < 0.001
+      ? "✅ Bobot kriteria sudah valid dan siap digunakan."
+      : totalBobot > 1
+      ? `❌ Total bobot melebihi 1.00 (saat ini ${totalBobot.toFixed(2)})`
+      : `⚠️ Total bobot belum mencapai 1.00 (sisa ${(1 - totalBobot).toFixed(2)})`}
+  </div>
+</div>
 
-        <div className="overflow-x-auto">
+  <div className="overflow-x-auto">
           {loading ? (
             <div className="flex h-32 items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-sky-500" />
@@ -324,7 +387,7 @@ export default function KriteriaPage() {
               <tbody>
                 {kriterias.length > 0 ? (
                   kriterias.map((row, idx) => (
-                    <tr key={row.id} className="hover:bg-slate-50">
+                    <tr key={row.id} className="table-row-hover">
                       <td className="border-b border-slate-200 px-4 py-3">
                         {idx + 1}
                       </td>
@@ -369,7 +432,7 @@ export default function KriteriaPage() {
                       </td>
                     </tr>
                   ))
-                ) : (
+                  ) : (
                   <tr>
                     <td
                       colSpan="7"
@@ -385,5 +448,6 @@ export default function KriteriaPage() {
         </div>
       </section>
     </div>
+    </>
   );
 }

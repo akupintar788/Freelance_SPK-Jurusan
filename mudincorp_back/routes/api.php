@@ -24,6 +24,7 @@ use App\Http\Controllers\API\Siswa\HasilPerhitunganController;
 use App\Http\Controllers\API\Siswa\HasilRekomendasiController;
 use App\Http\Controllers\API\Admin\NilaiRaporController;
 use App\Http\Controllers\API\Siswa\SiswaDashboardController;
+use App\Http\Controllers\API\Siswa\ProfileController;   
 // ======================================================
 // AUTH
 // ======================================================
@@ -133,6 +134,11 @@ Route::post('/nilai-rapor/siswa/{siswa_id}/import-excel',[NilaiRaporController::
             // Mengambil hasil akhir rekomendasi SAW (Mengatasi Error GET 404)
             // Diarahkan ke 'lihatHasilSendiri' atau 'index' sesuai isi controllermu
             Route::get('/hasil-rekomendasi', [HasilRekomendasiController::class, 'lihatHasilSendiri']);
+                // =========================
+            // PROFIL SISWA (TAMBAHAN BARU)
+            // =========================
+            Route::get('/profile', [ProfileController::class, 'show']);
+            Route::post('/profile', [ProfileController::class, 'update']); // Menggunakan POST agar support upload file di API
 
         });
 

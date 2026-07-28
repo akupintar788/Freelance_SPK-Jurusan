@@ -48,7 +48,17 @@ class KriteriaController extends Controller
             
             $maxUrutan = Kriteria::max('urutan') ?? 0;
             $data['urutan'] = $maxUrutan + 1;
+            $totalBobot = Kriteria::where('is_active', 1)
+            ->sum('bobot');
 
+            $totalBaru = $totalBobot + $data['bobot'];
+
+            if ($totalBaru > 1) {
+            return response()->json([
+            'success' => false,
+            'message' => "Total bobot tidak boleh melebihi 1. Total saat ini: {$totalBobot}"
+            ], 422);
+            }
             $kriteria = Kriteria::create($data);
 
             return response()->json([
@@ -104,7 +114,18 @@ class KriteriaController extends Controller
             
             $data['is_active'] = $kriteria->is_active ?? 1;
             $data['urutan'] = $kriteria->urutan ?? 1;
+         $totalBobot = Kriteria::where('id', '!=', $kriteria->id)
+    ->where('is_active', 1)
+    ->sum('bobot');
 
+$totalBaru = $totalBobot + $data['bobot'];
+
+if ($totalBaru > 1) {
+    return response()->json([
+        'success' => false,
+        'message' => "Total bobot melebihi 1. Total akan menjadi {$totalBaru}"
+    ], 422);
+}
             $kriteria->update($data);
 
             return response()->json([
